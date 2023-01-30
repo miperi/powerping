@@ -1,0 +1,5 @@
+comment,ip,port,email
+#nothisline,4.4.4.4,80:tcp,noemail
+tssteedf,34.34.34.34,80:tcp,noemail
+googleserver,8.8.8.8,53:tcp,miperi@gmail.com
+dddddd,1.1.1.1,80:tcp|5555:tcp,miperi@hotmail.com
