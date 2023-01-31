@@ -85,7 +85,7 @@ foreach ($ip in $ipList) {
             $portresult = $tcpClient.BeginConnect($ip.IP, $portDetails[0], $null, $null)
             $success = $portresult.AsyncWaitHandle.WaitOne($timeout)
             if ($success -eq $True) {
-                $tcpClient.EndConnect($result)
+                $tcpClient.EndConnect($portresult)
                 $tcpClient.Close()
                 Write-host -ForegroundColor Green "INFO`t$($ip.IP)`t($($ip.comment)) Port $($portDetails[0]) is reachable"
                 Write-Log -logText "INFO`t$($ip.IP)`t($($ip.comment)) Port $($portDetails[0]) is reachable" -logFileis $logFile
