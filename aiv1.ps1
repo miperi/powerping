@@ -4,6 +4,9 @@
 # 2. format on ports = 80:tcp
 # 3. format for many ports = 80:tcp|53:tcp
 # 4. do not sent email (only on total report) if the email = noemail
+# 5. enable localrun (desktop functionality) by runlocal="yes" (no is the default)
+
+$runlocal = "no"
 
 
 
