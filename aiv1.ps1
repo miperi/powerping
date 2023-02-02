@@ -4,9 +4,9 @@
 # 2. format on ports = 80:tcp
 # 3. format for many ports = 80:tcp|53:tcp
 # 4. do not sent email (only on total report) if the email = noemail
-# 5. enable localrun (desktop functionality) by runlocal="yes" (no is the default)
+# 5. enable localrun (desktop functionality) by runlocal="yes" (no is the default), no email alerts but notification balloons
 
-$runlocal = "no"
+$runlocal = "yes"
 
 
 
@@ -31,20 +31,38 @@ Function Write-Log {
     $logText = "$(Get-Date -Format s) `t $logText"
     Add-Content -Path $logFileis -Value $logText 
 }
-## Sent email
+## Sent email (or notification on runlocal mode ($runlocal=yes))
 Function Mailing {
     param(
         [string]$tois,
         [string]$subjectis,
-        [string]$bodyis
+        [string]$bodyis,
+        [string]$localis
     )
     #$Whenhappen= " $(Get-Date -Format s) "
     if($ip.email -eq "noemail") {
         write-host "ALERT email - but the email is --noemail--"
     }
     else{
-    #Send-MailMessage -To $tois -Subject $subjectis+$Whenhappen -Body $bodyis -from $mailfrom -SmtpServer $smtpserveris -ErrorAction SilentlyContinue
-    write-host "Email: -To $tois -Subject $subjectis -Body $bodyis -from $mailfrom -SmtpServer $smtpserveris -ErrorAction SilentlyContinue"
+        if($localis -like "yes"){
+            Add-Type -AssemblyName System.Windows.Forms
+            $global:balmsg = New-Object System.Windows.Forms.NotifyIcon
+            $path = (Get-Process -id $pid).Path
+            $balmsg.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path)
+            $balmsg.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Warning
+            $balmsg.BalloonTipText = $bodyis
+            $balmsg.BalloonTipTitle = "Attention $Env:USERNAME"
+            $balmsg.Visible = $true
+            $balmsg.ShowBalloonTip(5000)
+            #$balmsg.Icon.Dispose()
+            $balmsg.Dispose()
+            #Send-MailMessage -To $tois -Subject $subjectis+$Whenhappen -Body $bodyis -from $mailfrom -SmtpServer $smtpserveris -ErrorAction SilentlyContinue
+            write-host "Email: -To $tois -Subject $subjectis -Body $bodyis -from $mailfrom -SmtpServer $smtpserveris -ErrorAction SilentlyContinue"
+        }
+        Else{
+            #Send-MailMessage -To $tois -Subject $subjectis+$Whenhappen -Body $bodyis -from $mailfrom -SmtpServer $smtpserveris -ErrorAction SilentlyContinue
+            write-host "Email: -To $tois -Subject $subjectis -Body $bodyis -from $mailfrom -SmtpServer $smtpserveris -ErrorAction SilentlyContinue"
+        }
     }
 }
 
@@ -75,7 +93,7 @@ foreach ($ip in $ipList) {
         Write-Log -logText $pingalerttxt -logFileis $logFile
         Write-Log -logText $pingalerttxt -logFileis $logFileAlert
         write-host -ForegroundColor red $pingalerttxt
-        Mailing -tois $ip.email -subjectis $pingalerttxt -bodyis "The IP address $($ip.IP) is not reachable. Please check the connection."        # Log the ping timeout
+        Mailing -tois $ip.email -subjectis $pingalerttxt -bodyis "The IP address $($ip.IP) is not reachable. Please check the connection." -localis $runlocal
     }
     else {
         # If the ping does not time out, check the ports
@@ -99,7 +117,7 @@ foreach ($ip in $ipList) {
                 Write-Log -logText $portalerttxt -logFileis $logFile
                 Write-Log -logText $portalerttxt -logFileis $logFileAlert
                 Write-host -ForegroundColor Red $portalerttxt
-                Mailing -tois $ip.email -subjectis $portalerttxt  -bodyis "The port $($portDetails[0]) is not reachable on IP address $($ip.IP). Please check the connection." 
+                Mailing -tois $ip.email -subjectis $portalerttxt  -bodyis "The port $($portDetails[0]) is not reachable on IP address $($ip.IP). Please check the connection."  -localis $runlocal 
             }
         }
     }
@@ -114,7 +132,7 @@ $countAlerts = (Select-String -Path $logFileAlert -Pattern "ALERT" | Measure-Obj
 if ($null -ne $countAlerts) {
     write-host -BackgroundColor Yellow "ALERT EVERYONE:"
     $textalert = Get-Content $logFileAlert -Raw
-    Mailing -tois $primaryemailto -subjectis "ALERT $($countAlerts) from conn test" -bodyis $textalert
+    Mailing -tois $primaryemailto -subjectis "ALERT $($countAlerts) from conn test" -bodyis $textalert  -localis $runlocal
 }
 Else {
     write-host -BackgroundColor Yellow "NO ALERTS - YEA!"
